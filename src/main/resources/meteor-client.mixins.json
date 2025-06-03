@@ -139,6 +139,7 @@
     "PacketByteBufMixin",
     "ParticleManagerMixin",
     "PlayerArmorSlotMixin",
+    "PlayerEntityAccessor",
     "PlayerEntityMixin",
     "PlayerEntityRendererMixin",
     "PlayerInteractEntityC2SPacketMixin",
