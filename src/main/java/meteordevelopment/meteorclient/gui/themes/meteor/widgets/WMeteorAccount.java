@@ -18,7 +18,7 @@ public class WMeteorAccount extends WAccount implements MeteorWidget {
 
     @Override
     protected Color loggedInColor() {
-        return theme().loggedInColor.get();
+        return theme().activeListItemColor.get();
     }
 
     @Override

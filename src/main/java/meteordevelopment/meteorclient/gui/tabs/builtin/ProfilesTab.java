@@ -11,6 +11,8 @@ import meteordevelopment.meteorclient.gui.renderer.GuiRenderer;
 import meteordevelopment.meteorclient.gui.tabs.Tab;
 import meteordevelopment.meteorclient.gui.tabs.TabScreen;
 import meteordevelopment.meteorclient.gui.tabs.WindowTabScreen;
+import meteordevelopment.meteorclient.gui.themes.meteor.MeteorGuiTheme;
+import meteordevelopment.meteorclient.gui.widgets.WLabel;
 import meteordevelopment.meteorclient.gui.widgets.containers.WContainer;
 import meteordevelopment.meteorclient.gui.widgets.containers.WTable;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WButton;
@@ -63,13 +65,18 @@ public class ProfilesTab extends Tab {
             if (Profiles.get().isEmpty()) return;
 
             for (Profile profile : Profiles.get()) {
-                table.add(theme.label(profile.name.get())).expandCellX();
+                WLabel label = theme.label(profile.name.get());
+                if (profile == Profiles.get().getActive()) label.color = ((MeteorGuiTheme)theme).activeListItemColor.get();
+                table.add(label).expandCellX();
 
                 WButton save = table.add(theme.button("Save")).widget();
                 save.action = profile::save;
 
                 WButton load = table.add(theme.button("Load")).widget();
-                load.action = profile::load;
+                load.action = () -> {
+                    profile.load();
+                    reload();
+                };
 
                 WButton edit = table.add(theme.button(GuiRenderer.EDIT)).widget();
                 edit.action = () -> mc.setScreen(new EditProfileScreen(theme, profile, this::reload));

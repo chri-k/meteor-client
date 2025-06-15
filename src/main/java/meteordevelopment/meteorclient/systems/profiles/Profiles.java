@@ -13,17 +13,20 @@ import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.misc.NbtUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtString;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 
 public class Profiles extends System<Profiles> implements Iterable<Profile> {
     public static final File FOLDER = new File(MeteorClient.FOLDER, "profiles");
 
     private List<Profile> profiles = new ArrayList<>();
+    private Profile active = null;
 
     public Profiles() {
         super("profiles");
@@ -33,6 +36,7 @@ public class Profiles extends System<Profiles> implements Iterable<Profile> {
         return Systems.get(Profiles.class);
     }
 
+
     public void add(Profile profile) {
         if (!profiles.contains(profile)) profiles.add(profile);
         profile.save();
@@ -40,7 +44,10 @@ public class Profiles extends System<Profiles> implements Iterable<Profile> {
     }
 
     public void remove(Profile profile) {
-        if (profiles.remove(profile)) profile.delete();
+        if (profiles.remove(profile)) {
+            if (profile == active) active = null;
+            profile.delete();
+        }
         save();
     }
 
@@ -52,6 +59,19 @@ public class Profiles extends System<Profiles> implements Iterable<Profile> {
         }
 
         return null;
+    }
+
+    public Profile getActive() {
+        return active;
+    }
+
+    public void setActive(String name) {
+        setActive(get(name));
+    }
+
+    public void setActive(Profile profile) {
+        if (active != null) active.autoSave();
+        active = profile;
     }
 
     public List<Profile> getAll() {
@@ -85,12 +105,20 @@ public class Profiles extends System<Profiles> implements Iterable<Profile> {
     public NbtCompound toTag() {
         NbtCompound tag = new NbtCompound();
         tag.put("profiles", NbtUtils.listToTag(profiles));
+        if (active != null) tag.put("active_profile", NbtString.of(active.name.get()));
         return tag;
     }
 
     @Override
     public Profiles fromTag(NbtCompound tag) {
         profiles = NbtUtils.listFromTag(tag.getListOrEmpty("profiles"), Profile::new);
+        tag.getString("active_profile").ifPresent(this::setActive);
         return this;
+    }
+
+    @Override
+    public void save(File folder) {
+        super.save(folder);
+        if (active != null) active.autoSave();
     }
 }

@@ -41,6 +41,12 @@ public class Profile implements ISerializable<Profile> {
         .build()
     );
 
+    public Setting<Boolean> autoSave = sgGeneral.add(new BoolSetting.Builder()
+        .name("auto-save")
+        .description("Automatically save this profile if active.")
+        .build()
+    );
+
     public Setting<Boolean> hud = sgSave.add(new BoolSetting.Builder()
         .name("hud")
         .description("Whether the profile should save hud.")
@@ -77,6 +83,8 @@ public class Profile implements ISerializable<Profile> {
     public void load() {
         File folder = getFile();
 
+        Profiles.get().setActive(this);
+
         if (hud.get()) Hud.get().load(folder);
         if (macros.get()) Macros.get().load(folder);
         if (modules.get()) Modules.get().load(folder);
@@ -98,6 +106,10 @@ public class Profile implements ISerializable<Profile> {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void autoSave() {
+        if (autoSave.get()) save();
     }
 
     private File getFile() {
