@@ -20,7 +20,6 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 
 public class Profiles extends System<Profiles> implements Iterable<Profile> {
     public static final File FOLDER = new File(MeteorClient.FOLDER, "profiles");
