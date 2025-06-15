@@ -16,6 +16,8 @@ import meteordevelopment.meteorclient.gui.widgets.WLabel;
 import meteordevelopment.meteorclient.gui.widgets.containers.WContainer;
 import meteordevelopment.meteorclient.gui.widgets.containers.WTable;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WButton;
+import meteordevelopment.meteorclient.gui.widgets.pressable.WConfirmedButton;
+import meteordevelopment.meteorclient.gui.widgets.pressable.WConfirmedMinus;
 import meteordevelopment.meteorclient.gui.widgets.pressable.WMinus;
 import meteordevelopment.meteorclient.systems.profiles.Profile;
 import meteordevelopment.meteorclient.systems.profiles.Profiles;
@@ -69,8 +71,9 @@ public class ProfilesTab extends Tab {
                 if (profile == Profiles.get().getActive()) label.color = ((MeteorGuiTheme)theme).activeListItemColor.get();
                 table.add(label).expandCellX();
 
-                WButton save = table.add(theme.button("Save")).widget();
+                WConfirmedButton save = theme.confirmedButton("Save", "Confirm");;
                 save.action = profile::save;
+                table.add(save).right();
 
                 WButton load = table.add(theme.button("Load")).widget();
                 load.action = () -> {
@@ -81,7 +84,7 @@ public class ProfilesTab extends Tab {
                 WButton edit = table.add(theme.button(GuiRenderer.EDIT)).widget();
                 edit.action = () -> mc.setScreen(new EditProfileScreen(theme, profile, this::reload));
 
-                WMinus remove = table.add(theme.minus()).widget();
+                WConfirmedMinus remove = table.add(theme.confirmedMinus()).widget();
                 remove.action = () -> {
                     Profiles.get().remove(profile);
                     reload();
