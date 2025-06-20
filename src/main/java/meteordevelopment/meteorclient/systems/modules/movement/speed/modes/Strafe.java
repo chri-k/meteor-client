@@ -58,16 +58,12 @@ public class Strafe extends SpeedMode {
 
         Vector2d change = transformStrafe(speed);
 
-        double velX = change.x;
-        double velZ = change.y;
-
         Anchor anchor = Modules.get().get(Anchor.class);
         if (anchor.isActive() && anchor.controlMovement) {
-            velX = anchor.deltaX;
-            velZ = anchor.deltaZ;
+            change.set(anchor.deltaX, anchor.deltaZ);
         }
 
-        ((IVec3d) event.movement).meteor$setXZ(velX, velZ);
+        ((IVec3d) event.movement).meteor$setXZ(change.x, change.y);
     }
 
     private Vector2d transformStrafe(double speed) {
@@ -77,31 +73,16 @@ public class Strafe extends SpeedMode {
 
         double velX, velZ;
 
-        if (forward == 0.0f && side == 0.0f) return new Vector2d(0, 0);
+        if (forward == 0.0f && side == 0.0f) return new Vector2d();
 
-        else if (forward != 0.0f) {
-            if (side >= 1.0f) {
-                yaw += (float) (forward > 0.0f ? -45 : 45);
-                side = 0.0f;
-            } else if (side <= -1.0f) {
-                yaw += (float) (forward > 0.0f ? 45 : -45);
-                side = 0.0f;
-            }
+        float strafe = 90 * side;
+        if (forward != 0) strafe *= forward * 0.5f;
 
-            if (forward > 0.0f)
-                forward = 1.0f;
+        yaw = yaw - strafe;
+        if (forward < 0) yaw -= 180;
+        double yawRadians = Math.toRadians(yaw);
 
-            else if (forward < 0.0f)
-                forward = -1.0f;
-        }
-
-        double mx = Math.cos(Math.toRadians(yaw + 90.0f));
-        double mz = Math.sin(Math.toRadians(yaw + 90.0f));
-
-        velX = (double) forward * speed * mx + (double) side * speed * mz;
-        velZ = (double) forward * speed * mz - (double) side * speed * mx;
-
-        return new Vector2d(velX, velZ);
+        return new Vector2d(-Math.sin(yawRadians) * speed, Math.cos(yawRadians) * speed);
     }
 
     @Override
