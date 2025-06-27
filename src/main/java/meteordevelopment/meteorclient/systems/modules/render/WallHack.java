@@ -45,6 +45,14 @@ public class WallHack extends Module {
         .build()
     );
 
+    public final Setting<Boolean> occludeFaces = sgGeneral.add(new BoolSetting.Builder()
+        .name("occlude-block-faces")
+        .description("Do not render any blocks obscured by targeted ones")
+        .defaultValue(false)
+        .onChanged(_1 -> mc.worldRenderer.reload())
+        .build()
+    );
+
     public final Setting<Boolean> occludeChunks = sgGeneral.add(new BoolSetting.Builder()
         .name("occlude-chunks")
         .description("Whether caves should occlude underground (may look wonky when on).")

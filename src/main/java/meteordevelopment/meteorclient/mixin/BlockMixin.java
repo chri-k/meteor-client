@@ -9,6 +9,7 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.movement.NoSlow;
 import meteordevelopment.meteorclient.systems.modules.movement.Slippy;
+import meteordevelopment.meteorclient.systems.modules.render.WallHack;
 import meteordevelopment.meteorclient.systems.modules.render.Xray;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
@@ -19,6 +20,8 @@ import net.minecraft.util.math.Direction;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
+import java.util.List;
+
 @Mixin(Block.class)
 public abstract class BlockMixin extends AbstractBlock implements ItemConvertible {
     public BlockMixin(Settings settings) {
@@ -28,6 +31,12 @@ public abstract class BlockMixin extends AbstractBlock implements ItemConvertibl
     @ModifyReturnValue(method = "shouldDrawSide", at = @At("RETURN"))
     private static boolean onShouldDrawSide(boolean original, BlockState state, BlockState otherState, Direction side) {
         Xray xray = Modules.get().get(Xray.class);
+
+        WallHack wallHack = Modules.get().get(WallHack.class);
+        if (wallHack.isActive() && !wallHack.occludeFaces.get()) {
+            List<Block> blocks = wallHack.blocks.get();
+            if (!blocks.contains(state.getBlock()) && blocks.contains(otherState.getBlock())) return true;
+        }
 
         if (xray.isActive()) {
             return xray.modifyDrawSide(state, otherState, side, original);
