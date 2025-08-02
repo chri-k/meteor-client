@@ -170,44 +170,22 @@ public abstract class GameRendererMixin {
             info.cancel();
             Entity cameraE = client.getCameraEntity();
 
-            double x = cameraE.getX();
-            double y = cameraE.getY();
-            double z = cameraE.getZ();
-            double prevX = cameraE.prevX;
-            double prevY = cameraE.prevY;
-            double prevZ = cameraE.prevZ;
-            float yaw = cameraE.getYaw();
-            float pitch = cameraE.getPitch();
-            float prevYaw = cameraE.prevYaw;
-            float prevPitch = cameraE.prevPitch;
-
+            freecamSet = true;
             if (highwayBuilder) {
+                float yaw = cameraE.getYaw();
+                float pitch = cameraE.getPitch();
+
                 cameraE.setYaw(camera.getYaw());
                 cameraE.setPitch(camera.getPitch());
+
+                updateCrosshairTarget(tickDelta);
+
+                cameraE.setYaw(yaw);
+                cameraE.setPitch(pitch);
             } else {
-                ((IVec3d) cameraE.getPos()).meteor$set(freecam.getX(1), freecam.getY(1) - cameraE.getEyeHeight(cameraE.getPose()), freecam.getZ(1));
-                cameraE.prevX = freecam.getX(1);
-                cameraE.prevY = freecam.getY(1) - cameraE.getEyeHeight(cameraE.getPose());
-                cameraE.prevZ = freecam.getZ(1);
-                cameraE.setYaw(freecam.yaw);
-                cameraE.setPitch(freecam.pitch);
-                cameraE.prevYaw = freecam.yaw;
-                cameraE.prevPitch = freecam.pitch;
-                tickDelta = 1;
+                Freecam.withPos(() -> updateCrosshairTarget(tickDelta));
             }
-
-            freecamSet = true;
-            updateCrosshairTarget(tickDelta);
             freecamSet = false;
-
-            ((IVec3d) cameraE.getPos()).meteor$set(x, y, z);
-            cameraE.prevX = prevX;
-            cameraE.prevY = prevY;
-            cameraE.prevZ = prevZ;
-            cameraE.setYaw(yaw);
-            cameraE.setPitch(pitch);
-            cameraE.prevYaw = prevYaw;
-            cameraE.prevPitch = prevPitch;
         }
     }
 

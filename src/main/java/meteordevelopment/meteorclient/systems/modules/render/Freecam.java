@@ -7,6 +7,7 @@ package meteordevelopment.meteorclient.systems.modules.render;
 
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.game.GameLeftEvent;
 import meteordevelopment.meteorclient.events.game.OpenScreenEvent;
 import meteordevelopment.meteorclient.events.meteor.KeyEvent;
@@ -15,6 +16,7 @@ import meteordevelopment.meteorclient.events.meteor.MouseScrollEvent;
 import meteordevelopment.meteorclient.events.packets.PacketEvent;
 import meteordevelopment.meteorclient.events.world.ChunkOcclusionEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
+import meteordevelopment.meteorclient.mixininterface.IVec3d;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Categories;
 import meteordevelopment.meteorclient.systems.modules.Module;
@@ -22,6 +24,7 @@ import meteordevelopment.meteorclient.systems.modules.Modules;
 import meteordevelopment.meteorclient.systems.modules.movement.GUIMove;
 import meteordevelopment.meteorclient.utils.Utils;
 import meteordevelopment.meteorclient.utils.misc.Keybind;
+import meteordevelopment.meteorclient.utils.misc.Producer;
 import meteordevelopment.meteorclient.utils.misc.input.Input;
 import meteordevelopment.meteorclient.utils.misc.input.KeyAction;
 import meteordevelopment.meteorclient.utils.player.Rotations;
@@ -34,11 +37,14 @@ import net.minecraft.network.packet.s2c.play.DeathMessageS2CPacket;
 import net.minecraft.network.packet.s2c.play.HealthUpdateS2CPacket;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.EntityHitResult;
+import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.util.math.Vec3d;
 import org.joml.Vector3d;
 import org.lwjgl.glfw.GLFW;
+
+import java.util.concurrent.Callable;
 
 public class Freecam extends Module {
     private final SettingGroup sgGeneral = settings.getDefaultGroup();
@@ -206,12 +212,12 @@ public class Freecam extends Module {
 
         isSneaking = mc.options.sneakKey.isPressed();
 
-        forward = mc.options.forwardKey.isPressed();
-        backward = mc.options.backKey.isPressed();
-        right = mc.options.rightKey.isPressed();
-        left = mc.options.leftKey.isPressed();
-        up = mc.options.jumpKey.isPressed();
-        down = mc.options.sneakKey.isPressed();
+        forward = Input.isPressed(mc.options.forwardKey);
+        backward = Input.isPressed(mc.options.backKey);
+        right = Input.isPressed(mc.options.rightKey);
+        left = Input.isPressed(mc.options.leftKey);
+        up = Input.isPressed(mc.options.jumpKey);
+        down = Input.isPressed(mc.options.sneakKey);
 
         override = false;
 
@@ -223,8 +229,7 @@ public class Freecam extends Module {
     @Override
     public void onDeactivate() {
         if (reloadChunks.get()) {
-            if (!RenderSystem.isOnRenderThread()) RenderSystem.recordRenderCall(mc.worldRenderer::reload);
-            else mc.worldRenderer.reload();
+            mc.execute(mc.worldRenderer::reload);
         }
 
         mc.options.setPerspective(perspective);
@@ -284,7 +289,7 @@ public class Freecam extends Module {
         }
 
         double s = 0.5;
-        if (mc.options.sprintKey.isPressed()) s = 1;
+        if (Input.isPressed(mc.options.sprintKey)) s = 1;
 
         boolean a = false;
         if (this.forward) {
@@ -358,7 +363,7 @@ public class Freecam extends Module {
         if (handleRelativeBind()) event.cancel();
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     public void onKey(KeyEvent event) {
         if (Input.isKeyPressed(GLFW.GLFW_KEY_F3)) return;
         if (checkGuiMove()) return;
@@ -397,7 +402,7 @@ public class Freecam extends Module {
         if (cancel) event.cancel();
     }
 
-    @EventHandler
+    @EventHandler(priority = EventPriority.HIGH)
     private void onMouseButton(MouseButtonEvent event) {
         if (checkGuiMove()) return;
         if (override) return;
@@ -566,6 +571,94 @@ public class Freecam extends Module {
         if (relativePos.get()) z += mc.cameraEntity.getZ();
         return z;
     }
+    public Vec3d getPos(float tickDelta) {
+        return new Vec3d(getX(tickDelta), getY(tickDelta), getZ(tickDelta));
+    }
+    public Vec3d getPos() {
+        return new Vec3d(getX(1), getY(1), getZ(1));
+    }
+
+    static public <R> R withPos(Producer<R> c) {
+        Freecam f = Modules.get().get(Freecam.class);
+
+        Entity cameraE = MeteorClient.mc.getCameraEntity();
+
+        if (!f.shouldChangeCrosshairTarget()) return c.create();
+
+        double x = cameraE.getX();
+        double y = cameraE.getY();
+        double z = cameraE.getZ();
+        double lastX = cameraE.lastX;
+        double lastY = cameraE.lastY;
+        double lastZ = cameraE.lastZ;
+        float yaw = cameraE.getYaw();
+        float pitch = cameraE.getPitch();
+        float lastYaw = cameraE.lastYaw;
+        float lastPitch = cameraE.lastPitch;
+
+        cameraE.lastX = f.getX(1);
+        cameraE.lastY = f.getY(1) - cameraE.getEyeHeight(cameraE.getPose());
+        cameraE.lastZ = f.getZ(1);
+        cameraE.setYaw(yaw);
+        cameraE.setPitch(pitch);
+        cameraE.lastYaw = yaw;
+        cameraE.lastPitch = pitch;
+
+        R r = c.create();
+
+        ((IVec3d) cameraE.getPos()).meteor$set(x, y, z);
+        cameraE.lastX = lastX;
+        cameraE.lastY = lastY;
+        cameraE.lastZ = lastZ;
+        cameraE.setYaw(yaw);
+        cameraE.setPitch(pitch);
+        cameraE.lastYaw = lastYaw;
+        cameraE.lastPitch = lastPitch;
+
+        return r;
+    }
+
+    static public void withPos(Runnable c) {
+        Freecam f = Modules.get().get(Freecam.class);
+
+        Entity cameraE = MeteorClient.mc.getCameraEntity();
+
+        if (!f.shouldChangeCrosshairTarget()) {
+            c.run();
+            return;
+        }
+
+        double x = cameraE.getX();
+        double y = cameraE.getY();
+        double z = cameraE.getZ();
+        double lastX = cameraE.prevX;
+        double lastY = cameraE.prevY;
+        double lastZ = cameraE.prevZ;
+        float yaw = cameraE.getYaw();
+        float pitch = cameraE.getPitch();
+        float lastYaw = cameraE.prevYaw;
+        float lastPitch = cameraE.prevPitch;
+
+        cameraE.prevX = f.getX(1);
+        cameraE.prevY = f.getY(1) - cameraE.getEyeHeight(cameraE.getPose());
+        cameraE.prevZ = f.getZ(1);
+        cameraE.setYaw(yaw);
+        cameraE.setPitch(pitch);
+        cameraE.prevYaw = yaw;
+        cameraE.prevPitch = pitch;
+
+        c.run();
+
+        ((IVec3d) cameraE.getPos()).meteor$set(x, y, z);
+        cameraE.prevX = lastX;
+        cameraE.prevY = lastY;
+        cameraE.prevZ = lastZ;
+        cameraE.setYaw(yaw);
+        cameraE.setPitch(pitch);
+        cameraE.prevYaw = lastYaw;
+        cameraE.prevPitch = lastPitch;
+    }
+
 
     public double getYaw(float tickDelta) {
         if (override || !mc.isWindowFocused()) return yaw;
