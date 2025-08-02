@@ -588,32 +588,35 @@ public class Freecam extends Module {
         double x = cameraE.getX();
         double y = cameraE.getY();
         double z = cameraE.getZ();
-        double lastX = cameraE.lastX;
-        double lastY = cameraE.lastY;
-        double lastZ = cameraE.lastZ;
+        double lastX = cameraE.prevX;
+        double lastY = cameraE.prevY;
+        double lastZ = cameraE.prevZ;
         float yaw = cameraE.getYaw();
         float pitch = cameraE.getPitch();
-        float lastYaw = cameraE.lastYaw;
-        float lastPitch = cameraE.lastPitch;
+        float lastYaw = cameraE.prevYaw;
+        float lastPitch = cameraE.prevPitch;
 
-        cameraE.lastX = f.getX(1);
-        cameraE.lastY = f.getY(1) - cameraE.getEyeHeight(cameraE.getPose());
-        cameraE.lastZ = f.getZ(1);
-        cameraE.setYaw(yaw);
-        cameraE.setPitch(pitch);
-        cameraE.lastYaw = yaw;
-        cameraE.lastPitch = pitch;
+        Vec3d lastPos = f.getPos(0);
+
+        ((IVec3d) cameraE.getPos()).meteor$set(f.getX(1), f.getY(1) - cameraE.getEyeHeight(cameraE.getPose()), f.getZ(1));
+        cameraE.prevX = lastPos.x;
+        cameraE.prevY = lastPos.y - cameraE.getEyeHeight(cameraE.getPose());
+        cameraE.prevZ = lastPos.z;
+        cameraE.setYaw(f.yaw);
+        cameraE.setPitch(f.pitch);
+        cameraE.prevYaw = f.lastYaw;
+        cameraE.prevPitch = f.lastPitch;
 
         R r = c.create();
 
         ((IVec3d) cameraE.getPos()).meteor$set(x, y, z);
-        cameraE.lastX = lastX;
-        cameraE.lastY = lastY;
-        cameraE.lastZ = lastZ;
+        cameraE.prevX = lastX;
+        cameraE.prevY = lastY;
+        cameraE.prevZ = lastZ;
         cameraE.setYaw(yaw);
         cameraE.setPitch(pitch);
-        cameraE.lastYaw = lastYaw;
-        cameraE.lastPitch = lastPitch;
+        cameraE.prevYaw = lastYaw;
+        cameraE.prevPitch = lastPitch;
 
         return r;
     }
@@ -639,13 +642,16 @@ public class Freecam extends Module {
         float lastYaw = cameraE.prevYaw;
         float lastPitch = cameraE.prevPitch;
 
-        cameraE.prevX = f.getX(1);
-        cameraE.prevY = f.getY(1) - cameraE.getEyeHeight(cameraE.getPose());
-        cameraE.prevZ = f.getZ(1);
-        cameraE.setYaw(yaw);
-        cameraE.setPitch(pitch);
-        cameraE.prevYaw = yaw;
-        cameraE.prevPitch = pitch;
+        Vec3d lastPos = f.getPos(0);
+
+        ((IVec3d) cameraE.getPos()).meteor$set(f.getX(1), f.getY(1) - cameraE.getEyeHeight(cameraE.getPose()), f.getZ(1));
+        cameraE.prevX = lastPos.x;
+        cameraE.prevY = lastPos.y - cameraE.getEyeHeight(cameraE.getPose());
+        cameraE.prevZ = lastPos.z;
+        cameraE.setYaw(f.yaw);
+        cameraE.setPitch(f.pitch);
+        cameraE.prevYaw = f.lastYaw;
+        cameraE.prevPitch = f.lastPitch;
 
         c.run();
 
