@@ -170,11 +170,10 @@ public class Waypoint implements ISerializable<Waypoint> {
 
     public void setWaypointSet(WaypointSet set) {
         if (waypointSet == set) return;
-        if (set == null) set = Waypoints.get().getDefaultWaypointSet();
-
         if (waypointSet != null) waypointSet.removeWaypointUnsafe(this);
         waypointSet = set;
-        set.add(this);
+
+        if (waypointSet != null) waypointSet.add(this);
     }
 
     public void setWaypointSetUUID(UUID uuid) {
@@ -182,9 +181,9 @@ public class Waypoint implements ISerializable<Waypoint> {
     }
 
     public static class Builder {
-        private String name = "", icon = "";
-        private BlockPos pos = BlockPos.ORIGIN;
-        private Dimension dimension = Dimension.Overworld;
+        private String name = null, icon = null;
+        private BlockPos pos = null;
+        private Dimension dimension = null;
 
         private WaypointSet set = Waypoints.get().getDefaultWaypointSet();
 
@@ -216,11 +215,10 @@ public class Waypoint implements ISerializable<Waypoint> {
         public Waypoint build() {
             Waypoint waypoint = new Waypoint(set.defaultSettings);
 
-            if (!icon.equals(set.defaultSettings.icon.get())) waypoint.icon.set(icon);
-
-            if (!name.equals(waypoint.name.getDefaultValue())) waypoint.name.set(name);
-            if (!pos.equals(waypoint.pos.getDefaultValue())) waypoint.pos.set(pos);
-            if (!dimension.equals(waypoint.dimension.getDefaultValue())) waypoint.dimension.set(dimension);
+            if (icon != null) waypoint.icon.set(icon);
+            if (name != null) waypoint.name.set(name);
+            if (pos != null) waypoint.pos.set(pos);
+            if (dimension != null) waypoint.dimension.set(dimension);
 
             return waypoint;
         }

@@ -109,6 +109,21 @@ public class Waypoints extends System<Waypoints> implements Iterable<Waypoint> {
         save();
     }
 
+    public boolean removeWaypointSet(WaypointSet set, boolean deleteWaypoints) {
+        if (set == defaultWaypointSet) return false;
+
+        if (!waypointSets.contains(set)) return false;
+        for (Waypoint waypoint : set) {
+            if (deleteWaypoints) remove(waypoint);
+            else waypoint.setWaypointSet(null);
+        }
+
+        waypointSets.remove(set);
+
+        save();
+        return true;
+    }
+
     public Iterable<WaypointSet> waypointSets() {
         return waypointSets;
     }
@@ -124,6 +139,7 @@ public class Waypoints extends System<Waypoints> implements Iterable<Waypoint> {
         }
 
         waypoints.add(waypoint);
+        waypoint.setWaypointSet(waypoint.getWaypointSet());
         save();
 
         MeteorClient.EVENT_BUS.post(new WaypointAddedEvent(waypoint));
@@ -134,6 +150,7 @@ public class Waypoints extends System<Waypoints> implements Iterable<Waypoint> {
     public boolean remove(Waypoint waypoint) {
         boolean removed = waypoints.remove(waypoint);
         if (removed) {
+            waypoint.setWaypointSet(null);
             save();
             MeteorClient.EVENT_BUS.post(new WaypointRemovedEvent(waypoint));
         }
@@ -206,7 +223,7 @@ public class Waypoints extends System<Waypoints> implements Iterable<Waypoint> {
         tag.put("waypoint-sets", NbtUtils.listToTag(waypointSets));
         tag.put("waypoints", NbtUtils.listToTag(waypoints));
 
-        tag.putString("default-waypoint-set", defaultWaypointSet.name.get());
+        tag.put("default-waypoint-set", Uuids.INT_STREAM_CODEC, defaultWaypointSet.uuid);
 
         return tag;
     }

@@ -8,16 +8,15 @@ package meteordevelopment.meteorclient.systems.modules.render;
 import meteordevelopment.meteorclient.events.game.OpenScreenEvent;
 import meteordevelopment.meteorclient.events.render.Render2DEvent;
 import meteordevelopment.meteorclient.gui.GuiTheme;
+import meteordevelopment.meteorclient.gui.WindowScreen;
 import meteordevelopment.meteorclient.gui.renderer.GuiRenderer;
 import meteordevelopment.meteorclient.gui.screens.EditSystemScreen;
 import meteordevelopment.meteorclient.gui.screens.ModulesScreen;
 import meteordevelopment.meteorclient.gui.widgets.WLabel;
 import meteordevelopment.meteorclient.gui.widgets.WWidget;
 import meteordevelopment.meteorclient.gui.widgets.containers.WTable;
-import meteordevelopment.meteorclient.gui.widgets.pressable.WButton;
-import meteordevelopment.meteorclient.gui.widgets.pressable.WCheckbox;
-import meteordevelopment.meteorclient.gui.widgets.pressable.WFavorite;
-import meteordevelopment.meteorclient.gui.widgets.pressable.WConfirmedMinus;
+import meteordevelopment.meteorclient.gui.widgets.containers.WVerticalList;
+import meteordevelopment.meteorclient.gui.widgets.pressable.*;
 import meteordevelopment.meteorclient.pathing.PathManagers;
 import meteordevelopment.meteorclient.renderer.text.TextRenderer;
 import meteordevelopment.meteorclient.settings.*;
@@ -42,6 +41,13 @@ import org.joml.Vector3d;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Iterator;
+
+/* TODO: - `.waypoint` command
+         - profile extraction
+         - per-waypoint fade distance
+         - properly keep track of death-points; make dedicated set for them
+         - clean up UI
+ */
 
 import static meteordevelopment.meteorclient.utils.player.ChatUtils.formatCoords;
 
@@ -103,7 +109,8 @@ public class WaypointsModule extends Module {
 
         for (Waypoint waypoint : Waypoints.get()) {
             // Continue if this waypoint should not be rendered
-            if (!waypoint.visible.get() || !Waypoints.checkDimension(waypoint)) continue;
+            if (!waypoint.visible.get() || !waypoint.getWaypointSet().visible.get()) continue;
+            if (!Waypoints.checkDimension(waypoint)) continue;
 
             // Calculate distance
             BlockPos blockPos = waypoint.getPos();
@@ -199,15 +206,53 @@ public class WaypointsModule extends Module {
         }
     }
 
+    private WTable waypointsTable;
+
+    WButton createWaypointButton;
+
+    private void updateSelectedSet(GuiTheme theme) {
+        initWaypointTable(theme, waypointsTable, selectedSet);
+        createWaypointButton.set(String.format("Create Waypoint in `%s`", selectedSet.name.get()));
+    }
+
     @Override
     public WWidget getWidget(GuiTheme theme) {
         if (!Utils.canUpdate()) return theme.label("Enter a world to list waypoints");
 
         if (selectedSet == null) selectedSet = Waypoints.get().getDefaultWaypointSet();
 
-        WTable table = theme.table();
-        initWaypointTable(theme, table, selectedSet);
-        return table;
+        WVerticalList container = theme.verticalList();
+
+        waypointsTable = theme.table();
+
+        WTable sets = theme.table();
+        initSetTable(theme, sets);
+
+        WLabel desc = container.add(theme.label("""
+             Select a waypoint set to list its contents.
+             The default set for new waypoints is marked with a star""")).widget();
+        desc.color = theme.textSecondaryColor();
+
+        container.add(theme.horizontalSeparator("Waypoint Sets")).expandX();
+        container.add(sets).expandX();
+
+        WButton createSet = container.add(theme.button("Create New Set")).expandX().widget();
+        createSet.action = () -> mc.setScreen(new EditWaypointSetScreen(theme, null, () -> {
+            initSetTable(theme, sets);
+        }));
+
+        container.add(theme.horizontalSeparator("Listed set")).expandX();
+
+        container.add(waypointsTable).expandX();
+
+        createWaypointButton = container.add(theme.button("Add New Waypoint")).expandX().widget();
+        createWaypointButton.action = () -> mc.setScreen(new EditWaypointScreen(theme, null, () -> {
+            initWaypointTable(theme, waypointsTable, selectedSet);
+        }));
+
+        updateSelectedSet(theme);
+
+        return container;
     }
 
 
@@ -250,22 +295,27 @@ public class WaypointsModule extends Module {
 
             table.row();
         }
-
-        table.add(theme.horizontalSeparator()).expandX();
-        table.row();
-
-        WButton create = table.add(theme.button("Create")).expandX().widget();
-        create.action = () -> mc.setScreen(new EditWaypointScreen(theme, null, () -> initWaypointTable(theme, table, waypoints)));
     }
 
     private void waypointSetTableRow(GuiTheme theme, WTable table, WaypointSet set) {
         table.add(new WIcon(new Waypoint.Builder().fromSet(set).build()));
 
-        table.add(theme.label(set.name.get())).expandCellX().widget();
+        WLabel name = table.add(theme.label(set.name.get())).expandCellX().widget();
 
-        if (set.isDefault()) table.add(theme.favorite(true));
+        if (set == selectedSet) {
+            name.color = Color.GREEN;
+        }
 
-        WCheckbox visible = table.add(theme.checkbox(set.visible.get())).widget();
+        if (set != selectedSet) {
+            WButton view = table.add(theme.button("List")).widget();
+            view.action = () -> {
+                selectedSet = set;
+                initSetTable(theme, table);
+                updateSelectedSet(theme);
+            };
+        }
+
+        WCheckbox visible = table.add(theme.checkbox(set.visible.get())).right().widget();
         visible.action = () -> {
             set.visible.set(visible.checked);
             Waypoints.get().save();
@@ -274,19 +324,21 @@ public class WaypointsModule extends Module {
         WButton edit = table.add(theme.button(GuiRenderer.EDIT)).widget();
         edit.action = () -> mc.setScreen(new EditWaypointSetScreen(theme, set, () -> initSetTable(theme, table)));
 
-        WButton view = table.add(theme.button("View")).widget();
-        view.action = () -> {
-            selectedSet = set;
-            initSetTable(theme, table);
-        };
+        if (set.isDefault()) {
+            WFavorite f = table.add(theme.favorite(true)).widget();
+            f.action = () -> f.checked = true;
+        } else {
+            WMinus remove = table.add(theme.minus()).widget();
 
-        WMinus remove = table.add(theme.minus()).widget();
+            DeleteWaypointSetPrompt screen = new DeleteWaypointSetPrompt(theme, set);
+            screen.onClosed(() -> {
+                initSetTable(theme, table);
+                updateSelectedSet(theme);
+            });
+            remove.action = () -> mc.setScreen(screen);
+        }
 
-        remove.action = () -> {
-            Waypoints.get().remove(waypoint);
-            initWaypointTable(theme, table, waypoints);
-        };
-
+        table.row();
     }
 
     private void initSetTable(GuiTheme theme, WTable table) {
@@ -297,15 +349,9 @@ public class WaypointsModule extends Module {
             if (set == selectedSet) continue;
             waypointSetTableRow(theme, table, set);
         }
-
-        table.add(theme.horizontalSeparator()).expandX();
-        table.row();
-
-        WButton create = table.add(theme.button("Create")).expandX().widget();
-        create.action = () -> mc.setScreen(new EditWaypointScreen(theme, null, () -> initWaypointTable(theme, table)));
     }
 
-    private static class EditWaypointScreen extends EditSystemScreen<Waypoint> {
+    private class EditWaypointScreen extends EditSystemScreen<Waypoint> {
         public EditWaypointScreen(GuiTheme theme, Waypoint value, Runnable reload) {
             super(theme, value, reload);
         }
@@ -315,6 +361,7 @@ public class WaypointsModule extends Module {
             return new Waypoint.Builder()
                 .pos(MinecraftClient.getInstance().player.getBlockPos().up(2))
                 .dimension(PlayerUtils.getDimension())
+                .fromSet(selectedSet)
                 .build();
         }
 
@@ -322,6 +369,7 @@ public class WaypointsModule extends Module {
         public boolean save() {
             if (value.name.get().isBlank()) return false;
 
+            value.setWaypointSet(selectedSet);
             Waypoints.get().add(value);
             return true;
         }
@@ -332,8 +380,7 @@ public class WaypointsModule extends Module {
         }
     }
 
-    private final class EditWaypointSetScreen extends EditSystemScreen<WaypointSet> {
-
+    private final static class EditWaypointSetScreen extends EditSystemScreen<WaypointSet> {
         public EditWaypointSetScreen(GuiTheme theme, WaypointSet value, Runnable reload) {
             super(theme, value, reload);
         }
@@ -345,27 +392,49 @@ public class WaypointsModule extends Module {
 
         @Override
         public boolean save() {
+            if (value.name.get().isBlank()) return false;
+
             Waypoints.get().addWaypointSet(value);
-            return false;
+            return true;
         }
 
         @Override
         public Settings getSettings() {
             return value.settings;
         }
+    }
 
-        WTable table;
+    private static final class DeleteWaypointSetPrompt extends WindowScreen {
+        private WaypointSet set;
+
+        public DeleteWaypointSetPrompt(GuiTheme theme, WaypointSet set) {
+            super(theme, "Deleting waypoint set");
+            this.set = set;
+        }
 
         @Override
         public void initWidgets() {
-            super.initWidgets();
-            add(theme.horizontalSeparator()).expandX();
-            table = theme.table();
-            initWaypointTable(theme, table, value);
-            add(table);
+
+            add(theme.label("this waypoint set is not empty"));
+
+            WConfirmedButton delete = theme.confirmedButton("delete waypoints", "confirm delete");
+            WButton move = theme.button("move to default");
+
+            WTable table = add(theme.table()).widget();
+
+            table.add(delete);
+            table.add(move);
+
+            move.action = () -> {
+                Waypoints.get().removeWaypointSet(set, false);
+                close();
+            };
+            delete.action = () -> {
+                Waypoints.get().removeWaypointSet(set, true);
+                close();
+            };
         }
     }
-
 
     private static class WIcon extends WWidget {
         private final Waypoint waypoint;

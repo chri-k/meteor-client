@@ -95,7 +95,7 @@ public class WaypointSet implements Iterable<Waypoint>, ISerializable<WaypointSe
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Waypoint waypoint = (Waypoint) o;
+        WaypointSet waypoint = (WaypointSet) o;
         return Objects.equals(uuid, waypoint.uuid);
     }
 
