@@ -75,6 +75,13 @@ public class TextHud extends HudElement {
         .build()
     );
 
+    public final Setting<Align> align = sgGeneral.add(new EnumSetting.Builder<Align>()
+        .name("vertical-alignment")
+        .description("how to hangle alignment of multiline text")
+        .defaultValue(Align.Top)
+        .build()
+    );
+
     // Shown
 
     public final Setting<Shown> shown = sgShown.add(new EnumSetting.Builder<Shown>()
@@ -159,20 +166,33 @@ public class TextHud extends HudElement {
 
     private void calculateSize(HudRenderer renderer) {
         double width = 0;
+        double height = renderer.textHeight(shadow.get(), getScale());
 
         if (section != null) {
             String str = section.toString();
-            if (!str.isBlank()) width = renderer.textWidth(str, shadow.get(), getScale());
+            if (!str.isBlank()) {
+                String[] lines = str.split("\n");
+
+                height *= lines.length;
+
+                width = 0;
+                for (String line : lines) {
+                    double lineWidth = renderer.textWidth(line, shadow.get(), getScale());
+                    if (lineWidth > width) width = lineWidth;
+                }
+            }
         }
 
-        if (width != 0) {
-            setSize(width, renderer.textHeight(shadow.get(), getScale()));
-            empty = false;
-        }
-        else {
+        if (width == 0) {
             setSize(100, renderer.textHeight(shadow.get(), getScale()));
             empty = true;
+            return;
         }
+
+        empty = false;
+
+        setSize(width, height);
+        empty = false;
     }
 
     @Override
@@ -241,11 +261,25 @@ public class TextHud extends HudElement {
         if (section == null || !visible) return;
 
         double x = this.x + border.get();
+        double y = this.y + border.get();
+
+        double heightExtra = getHeight() - renderer.textHeight(shadow.get(), getScale());
+
+        switch (align.get()) {
+            case Bottom -> y -= heightExtra;
+            case Center -> y -= heightExtra / 2;
+        }
+
         Section s = section;
 
         while (s != null) {
-            x = renderer.text(s.text, x, y + border.get(), getSectionColor(s.index), shadow.get(), getScale());
-            s = s.next;
+            String[] lines = s.text.split("\n");
+            for (int i = 0; i < lines.length; i++) {
+                if (i != 0) x = this.x + border.get();
+                if (!lines[i].isBlank()) x = renderer.text(lines[i], x, y, getSectionColor(s.index), shadow.get(), getScale());
+                y += renderer.textHeight(shadow.get(), getScale());
+                s = s.next;
+            }
         }
 
         if (background.get()) {
@@ -280,5 +314,11 @@ public class TextHud extends HudElement {
                 case WhenFalse -> "When False";
             };
         }
+    }
+
+    public enum Align {
+        Top,
+        Center,
+        Bottom,
     }
 }
