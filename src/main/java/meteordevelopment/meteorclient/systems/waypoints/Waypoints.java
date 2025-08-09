@@ -24,6 +24,8 @@ import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
+import net.minecraft.util.Uuids;
+import org.jetbrains.annotations.NonBlocking;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -39,6 +41,9 @@ public class Waypoints extends System<Waypoints> implements Iterable<Waypoint> {
     public final Map<String, AbstractTexture> icons = new ConcurrentHashMap<>();
 
     private final List<Waypoint> waypoints = Collections.synchronizedList(new ArrayList<>());
+
+    private final List<WaypointSet> waypointSets = new ArrayList<>();
+    private WaypointSet defaultWaypointSet = null;
 
     public Waypoints() {
         super(null);
@@ -73,6 +78,39 @@ public class Waypoints extends System<Waypoints> implements Iterable<Waypoint> {
                 }
             }
         }
+    }
+
+    @NotNull
+    public WaypointSet getDefaultWaypointSet() {
+        return defaultWaypointSet;
+    }
+
+    public void setDefaultWaypointSet(WaypointSet set) {
+        addWaypointSet(set);
+        defaultWaypointSet = set;
+    }
+
+    public WaypointSet getWaypointSet(String name) {
+        for (WaypointSet set : waypointSets) {
+            if (set.name.get().equalsIgnoreCase(name)) return set;
+        }
+        return null;
+    }
+
+    public WaypointSet getWaypointSet(UUID uuid) {
+       for (WaypointSet set : waypointSets) {
+            if (set.uuid.equals(uuid)) return set;
+       }
+       return null;
+    }
+
+    public void addWaypointSet(WaypointSet set) {
+        if (!waypointSets.contains(set)) waypointSets.add(set);
+        save();
+    }
+
+    public Iterable<WaypointSet> waypointSets() {
+        return waypointSets;
     }
 
     /**
@@ -164,13 +202,33 @@ public class Waypoints extends System<Waypoints> implements Iterable<Waypoint> {
     @Override
     public NbtCompound toTag() {
         NbtCompound tag = new NbtCompound();
+
+        tag.put("waypoint-sets", NbtUtils.listToTag(waypointSets));
         tag.put("waypoints", NbtUtils.listToTag(waypoints));
+
+        tag.putString("default-waypoint-set", defaultWaypointSet.name.get());
+
         return tag;
     }
 
     @Override
     public Waypoints fromTag(NbtCompound tag) {
         waypoints.clear();
+
+        defaultWaypointSet = null;
+
+        UUID defaultWaypointSetUUID = tag.get("default-waypoint-set", Uuids.INT_STREAM_CODEC).orElse(null);
+
+        for (NbtElement element : tag.getListOrEmpty("waypoint-sets")) {
+            WaypointSet set = new WaypointSet(element);
+            if (set.uuid.equals(defaultWaypointSetUUID)) defaultWaypointSet = set;
+            waypointSets.add(set);
+        }
+
+        if (defaultWaypointSet == null) {
+            defaultWaypointSet = new WaypointSet();
+            waypointSets.add(defaultWaypointSet);
+        }
 
         for (NbtElement waypointTag : tag.getListOrEmpty("waypoints")) {
             waypoints.add(new Waypoint(waypointTag));

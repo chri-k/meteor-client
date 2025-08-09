@@ -6,6 +6,8 @@
 package meteordevelopment.meteorclient.systems.waypoints;
 
 import meteordevelopment.meteorclient.MeteorClient;
+import meteordevelopment.meteorclient.gui.GuiTheme;
+import meteordevelopment.meteorclient.gui.widgets.containers.WTable;
 import meteordevelopment.meteorclient.renderer.Renderer2D;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.utils.misc.ISerializable;
@@ -17,6 +19,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
 import net.minecraft.util.Uuids;
 import net.minecraft.util.math.BlockPos;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Map;
 import java.util.Objects;
@@ -94,6 +97,8 @@ public class Waypoint implements ISerializable<Waypoint> {
         .build()
     );
 
+    private WaypointSet waypointSet;
+
     public final UUID uuid;
 
     private Waypoint() {
@@ -107,6 +112,17 @@ public class Waypoint implements ISerializable<Waypoint> {
         else uuid = UUID.randomUUID();
 
         fromTag(nbt);
+    }
+
+    public Waypoint(WaypointSet.DefaultSettings fromDefault) {
+        uuid = UUID.randomUUID();
+
+        icon.set(fromDefault.icon.get());
+        color.set(fromDefault.color.get());
+        visible.set(fromDefault.visible.get());
+        maxVisible.set(fromDefault.maxVisible.get());
+        scale.set(fromDefault.scale.get());
+        opposite.set(fromDefault.opposite.get());
     }
 
     public void renderIcon(double x, double y, double a, double size) {
@@ -146,10 +162,31 @@ public class Waypoint implements ISerializable<Waypoint> {
         }
     }
 
+    @NotNull
+    public WaypointSet getWaypointSet() {
+        if (waypointSet == null) setWaypointSet(Waypoints.get().getDefaultWaypointSet());
+        return waypointSet;
+    }
+
+    public void setWaypointSet(WaypointSet set) {
+        if (waypointSet == set) return;
+        if (set == null) set = Waypoints.get().getDefaultWaypointSet();
+
+        if (waypointSet != null) waypointSet.removeWaypointUnsafe(this);
+        waypointSet = set;
+        set.add(this);
+    }
+
+    public void setWaypointSetUUID(UUID uuid) {
+        setWaypointSet(Waypoints.get().getWaypointSet(uuid));
+    }
+
     public static class Builder {
         private String name = "", icon = "";
         private BlockPos pos = BlockPos.ORIGIN;
         private Dimension dimension = Dimension.Overworld;
+
+        private WaypointSet set = Waypoints.get().getDefaultWaypointSet();
 
         public Builder name(String name) {
             this.name = name;
@@ -171,11 +208,17 @@ public class Waypoint implements ISerializable<Waypoint> {
             return this;
         }
 
+        public Builder fromSet(WaypointSet set) {
+            this.set = set;
+            return this;
+        }
+
         public Waypoint build() {
-            Waypoint waypoint = new Waypoint();
+            Waypoint waypoint = new Waypoint(set.defaultSettings);
+
+            if (!icon.equals(set.defaultSettings.icon.get())) waypoint.icon.set(icon);
 
             if (!name.equals(waypoint.name.getDefaultValue())) waypoint.name.set(name);
-            if (!icon.equals(waypoint.icon.getDefaultValue())) waypoint.icon.set(icon);
             if (!pos.equals(waypoint.pos.getDefaultValue())) waypoint.pos.set(pos);
             if (!dimension.equals(waypoint.dimension.getDefaultValue())) waypoint.dimension.set(dimension);
 
@@ -190,15 +233,17 @@ public class Waypoint implements ISerializable<Waypoint> {
         tag.put("uuid", Uuids.INT_STREAM_CODEC, uuid);
         tag.put("settings", settings.toTag());
 
+        if (waypointSet != null) {
+            tag.put("waypoint-set", Uuids.INT_STREAM_CODEC, waypointSet.uuid);
+        }
+
         return tag;
     }
 
     @Override
     public Waypoint fromTag(NbtCompound tag) {
-        if (tag.contains("settings")) {
-            settings.fromTag(tag.getCompoundOrEmpty("settings"));
-        }
-
+        tag.getCompound("settings").ifPresent(settings::fromTag);
+        tag.get("waypoint-set", Uuids.INT_STREAM_CODEC).ifPresent(this::setWaypointSetUUID);
         return this;
     }
 
