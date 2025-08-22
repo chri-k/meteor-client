@@ -118,7 +118,7 @@ public class ProfilesTab extends Tab {
             for (Profile profile : Profiles.get()) {
                 table.add(theme.label(profile.name.get())).expandCellX();
 
-                WConfirmedButton save = theme.confirmedButton("Save", "Confirm");;
+                WConfirmedButton save = theme.confirmedButton("Save", "Confirm");
                 save.action = profile::save;
                 table.add(save).right();
 
