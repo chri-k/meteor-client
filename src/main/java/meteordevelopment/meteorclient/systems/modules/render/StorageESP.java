@@ -138,7 +138,7 @@ public class StorageESP extends Module {
 
     private final Setting<SettingColor> other = sgGeneral.add(new ColorSetting.Builder()
         .name("other")
-        .description("The color of furnaces, dispenders, droppers and hoppers.")
+        .description("The color of furnaces, dispensers, droppers and hoppers.")
         .defaultValue(new SettingColor(140, 140, 140, 255))
         .build()
     );
@@ -241,8 +241,6 @@ public class StorageESP extends Module {
     private void onRender(Render3DEvent event) {
         count = 0;
 
-        if (mode.get() == Mode.Shader) mesh.begin();
-
         for (BlockEntity blockEntity : Utils.blockEntities()) {
             // Check if the block has been interacted with (opened)
             boolean interacted = interactedBlocks.contains(blockEntity.getPos());
@@ -259,6 +257,11 @@ public class StorageESP extends Module {
             }
 
             if (render) {
+                // Only start a mesh when there's something to render
+                if (count == 0 && mode.get() == Mode.Shader) {
+                    mesh.begin();
+                }
+
                 double dist = PlayerUtils.squaredDistanceTo(blockEntity.getPos().getX() + 0.5, blockEntity.getPos().getY() + 0.5, blockEntity.getPos().getZ() + 0.5);
                 double a = 1;
                 if (dist <= fadeDistance.get() * fadeDistance.get()) a = dist / (fadeDistance.get() * fadeDistance.get());
@@ -273,17 +276,24 @@ public class StorageESP extends Module {
                     event.renderer.line(RenderUtils.center.x, RenderUtils.center.y, RenderUtils.center.z, blockEntity.getPos().getX() + 0.5, blockEntity.getPos().getY() + 0.5, blockEntity.getPos().getZ() + 0.5, lineColor);
                 }
 
-                if (mode.get() == Mode.Box && a >= 0.075) renderBox(event, blockEntity);
+                if (mode.get() == Mode.Box && a >= 0.075) {
+                    renderBox(event, blockEntity);
+                }
 
                 lineColor.a = prevLineA;
                 sideColor.a = prevSideA;
 
-                if (mode.get() == Mode.Shader) renderShader(event, blockEntity);
+                if (mode.get() == Mode.Shader) {
+                    renderShader(event, blockEntity);
+                }
 
                 count++;
             }
         }
-        if (mode.get() == Mode.Shader) PostProcessShaders.STORAGE_OUTLINE.endRender(() -> mesh.render(event.matrices));
+
+        if (mode.get() == Mode.Shader && count > 0) {
+            PostProcessShaders.STORAGE_OUTLINE.endRender(() -> mesh.render(event.matrices));
+        }
     }
 
 
