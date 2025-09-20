@@ -9,6 +9,8 @@ import meteordevelopment.meteorclient.events.world.TickEvent;
 import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Categories;
 import meteordevelopment.meteorclient.systems.modules.Module;
+import meteordevelopment.meteorclient.systems.modules.player.ToolSaver;
+import meteordevelopment.meteorclient.utils.misc.HorizontalDirection;
 import meteordevelopment.meteorclient.utils.player.FindItemResult;
 import meteordevelopment.meteorclient.utils.player.InvUtils;
 import meteordevelopment.meteorclient.utils.player.PlayerUtils;
@@ -35,13 +37,6 @@ public class Flamethrower extends Module {
         .description("The maximum distance the animal has to be to be roasted.")
         .min(0.0)
         .defaultValue(5.0)
-        .build()
-    );
-
-    private final Setting<Boolean> antiBreak = sgGeneral.add(new BoolSetting.Builder()
-        .name("anti-break")
-        .description("Prevents flint and steel from being broken.")
-        .defaultValue(false)
         .build()
     );
 
@@ -108,10 +103,14 @@ public class Flamethrower extends Module {
             if (entity == mc.player) continue;
             if (!targetBabies.get() && entity instanceof LivingEntity && ((LivingEntity)entity).isBaby()) continue;
 
-            FindItemResult findFlintAndSteel = InvUtils.findInHotbar(itemStack -> itemStack.getItem() == Items.FLINT_AND_STEEL && (!antiBreak.get() || itemStack.getDamage() < itemStack.getMaxDamage() - 1));
+            FindItemResult findFlintAndSteel = InvUtils.findInHotbar(itemStack -> itemStack.getItem() == Items.FLINT_AND_STEEL && ToolSaver.canUse(itemStack));
             if (!InvUtils.swap(findFlintAndSteel.slot(), true)) return;
 
-            this.hand = findFlintAndSteel.getHand();
+            FindItemResult item = InvUtils.findInHotbar(itemStack -> (itemStack.isOf(Items.FLINT_AND_STEEL) || itemStack.isOf(Items.FIRE_CHARGE)) &&
+                ToolSaver.canUse(itemStack));
+            if (!InvUtils.swap(item.slot(), true)) return;
+
+            this.hand = item.getHand();
             this.entity = entity;
 
             if (rotate.get()) Rotations.rotate(Rotations.getYaw(entity.getBlockPos()), Rotations.getPitch(entity.getBlockPos()), -100, this::interact);
