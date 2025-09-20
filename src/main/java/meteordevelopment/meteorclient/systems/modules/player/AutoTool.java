@@ -158,7 +158,9 @@ public class AutoTool extends Module {
             if (listMode.get() == ListMode.Whitelist && !whitelist.get().contains(itemStack.getItem())) continue;
             if (listMode.get() == ListMode.Blacklist && blacklist.get().contains(itemStack.getItem())) continue;
 
-            double score = getScore(itemStack, blockState, silkTouchForEnderChest.get(), fortuneForOresCrops.get(), prefer.get(), ToolSaver::canUse);
+            EnchantPreference pref = isGlass(blockState.getBlock()) && silkTouchForGlass.get() ? EnchantPreference.SilkTouch : prefer.get();
+
+            double score = getScore(itemStack, blockState, silkTouchForEnderChest.get(), fortuneForOresCrops.get(), pref, ToolSaver::canUse);
             if (score < 0) continue;
 
             if (score > bestScore) {
@@ -188,7 +190,12 @@ public class AutoTool extends Module {
 
     public static double getScore(ItemStack itemStack, BlockState state, boolean silkTouchEnderChest, boolean fortuneOre, EnchantPreference enchantPreference, Predicate<ItemStack> good) {
         if (!good.test(itemStack) || !isTool(itemStack)) return -1;
-        if (!itemStack.isSuitableFor(state) && !(itemStack.getItem() instanceof SwordItem && (state.getBlock() instanceof BambooBlock || state.getBlock() instanceof BambooShootBlock)) && !(itemStack.getItem() instanceof ShearsItem && state.getBlock() instanceof LeavesBlock || state.isIn(BlockTags.WOOL))) return -1;
+
+        if (!itemStack.isSuitableFor(state) &&
+            !(itemStack.getItem() instanceof SwordItem && (state.getBlock() instanceof BambooBlock || state.getBlock() instanceof BambooShootBlock)) &&
+            !(itemStack.getItem() instanceof ShearsItem && state.getBlock() instanceof LeavesBlock || state.isIn(BlockTags.WOOL)) &&
+            !(isGlass(state.getBlock()) && enchantPreference == EnchantPreference.SilkTouch && Utils.getEnchantmentLevel(itemStack, Enchantments.SILK_TOUCH) > 0))
+            return -1;
 
         if (silkTouchEnderChest
             && state.getBlock() == Blocks.ENDER_CHEST
@@ -216,6 +223,10 @@ public class AutoTool extends Module {
             score += 9000 + (item.getComponents().get(DataComponentTypes.TOOL).getSpeed(state) * 1000);
 
         return score;
+    }
+
+    private static boolean isGlass(Block b) {
+        return b == Blocks.GLASS || b == Blocks.GLASS_PANE || b instanceof StainedGlassBlock || b instanceof StainedGlassPaneBlock || b instanceof TintedGlassBlock;
     }
 
     public static boolean isTool(Item item) {
