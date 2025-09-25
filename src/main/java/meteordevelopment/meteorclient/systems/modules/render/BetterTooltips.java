@@ -376,6 +376,7 @@ public class BetterTooltips extends Module {
                     return;
                 }
 
+                entity.copyComponentsFrom(event.itemStack);
                 ((Bucketable) entity).copyDataFromNbt(nbtComponent.copyNbt());
                 ((EntityAccessor) entity).setInWater(true);
                 event.tooltipData = new EntityTooltipComponent(entity);
