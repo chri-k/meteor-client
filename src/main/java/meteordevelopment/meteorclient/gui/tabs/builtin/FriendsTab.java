@@ -5,6 +5,7 @@
 
 package meteordevelopment.meteorclient.gui.tabs.builtin;
 
+import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.gui.GuiTheme;
 import meteordevelopment.meteorclient.gui.tabs.Tab;
 import meteordevelopment.meteorclient.gui.tabs.TabScreen;
@@ -64,7 +65,7 @@ public class FriendsTab extends Tab {
 
                     MeteorExecutor.execute(() -> {
                         friend.updateInfo();
-                        reload();
+                        MeteorClient.mc.execute(this::reload);
                     });
                 }
             };
@@ -80,7 +81,6 @@ public class FriendsTab extends Tab {
                 MeteorExecutor.execute(() -> {
                     if (friend.headTextureNeedsUpdate()) {
                         friend.updateInfo();
-                        reload();
                     }
                 })
             );
