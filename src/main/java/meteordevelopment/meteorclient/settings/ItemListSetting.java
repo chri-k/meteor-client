@@ -5,54 +5,54 @@
 
 package meteordevelopment.meteorclient.settings;
 
+import meteordevelopment.meteorclient.MeteorClient;
+import meteordevelopment.meteorclient.settings.groups.GroupedList;
+import meteordevelopment.meteorclient.systems.modules.player.AutoEat;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.ConsumableComponents;
 import net.minecraft.item.Item;
-import net.minecraft.nbt.NbtCompound;
+import net.minecraft.item.Items;
 import net.minecraft.nbt.NbtElement;
-import net.minecraft.nbt.NbtList;
 import net.minecraft.nbt.NbtString;
 import net.minecraft.registry.Registries;
 import net.minecraft.util.Identifier;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
-public class ItemListSetting extends Setting<List<Item>> {
-    public final Predicate<Item> filter;
+public class ItemListSetting extends GroupedListSetting<Item> {
+
+    public static final Groups<Item> GROUPS = new Groups<>();
+
     private final boolean bypassFilterWhenSavingAndLoading;
 
-    public ItemListSetting(String name, String description, List<Item> defaultValue, Consumer<List<Item>> onChanged, Consumer<Setting<List<Item>>> onModuleActivated, IVisible visible, Predicate<Item> filter, boolean bypassFilterWhenSavingAndLoading) {
-        super(name, description, defaultValue, onChanged, onModuleActivated, visible);
+    public ItemListSetting(String name, String description, GroupedList<Item, Groups<Item>.Group> defaultValue, Consumer<GroupedList<Item, Groups<Item>.Group>> onChanged, Consumer<Setting<GroupedList<Item, Groups<Item>.Group>>> onModuleActivated, IVisible visible, Predicate<Item> filter, boolean bypassFilterWhenSavingAndLoading) {
+        super(name, description, defaultValue, filter, onChanged, onModuleActivated, visible);
 
-        this.filter = filter;
         this.bypassFilterWhenSavingAndLoading = bypassFilterWhenSavingAndLoading;
     }
 
     @Override
-    protected List<Item> parseImpl(String str) {
-        String[] values = str.split(",");
-        List<Item> items = new ArrayList<>(values.length);
-
-        try {
-            for (String value : values) {
-                Item item = parseId(Registries.ITEM, value);
-                if (item != null && (filter == null || filter.test(item))) items.add(item);
-            }
-        } catch (Exception ignored) {}
-
-        return items;
+    public Item parseItem(String str) {
+        Item item = parseId(Registries.ITEM, str);
+        if (item != null && (filter == null || filter.test(item))) return item;
+        return null;
     }
 
     @Override
-    public void resetImpl() {
-        value = new ArrayList<>(defaultValue);
+    public NbtElement itemToNbt(Item item) {
+        return NbtString.of(Registries.ITEM.getId(item).toString());
     }
 
     @Override
-    protected boolean isValueValid(List<Item> value) {
-        return true;
+    public Item itemFromNbt(NbtElement e) {
+        return Registries.ITEM.get(Identifier.of(e.asString().orElse("")));
+    }
+
+    @Override
+    protected Groups<Item> groups() {
+        return GROUPS;
     }
 
     @Override
@@ -60,41 +60,40 @@ public class ItemListSetting extends Setting<List<Item>> {
         return Registries.ITEM.getIds();
     }
 
-    @Override
-    public NbtCompound save(NbtCompound tag) {
-        NbtList valueTag = new NbtList();
-        for (Item item : get()) {
-            if (bypassFilterWhenSavingAndLoading || (filter == null || filter.test(item))) valueTag.add(NbtString.of(Registries.ITEM.getId(item).toString()));
-        }
-        tag.put("value", valueTag);
-
-        return tag;
-    }
-
-    @Override
-    public List<Item> load(NbtCompound tag) {
-        get().clear();
-
-        NbtList valueTag = tag.getListOrEmpty("value");
-        for (NbtElement tagI : valueTag) {
-            Item item = Registries.ITEM.get(Identifier.of(tagI.asString().orElse("")));
-
-            if (bypassFilterWhenSavingAndLoading || (filter == null || filter.test(item))) get().add(item);
-        }
-
-        return get();
-    }
-
-    public static class Builder extends SettingBuilder<Builder, List<Item>, ItemListSetting> {
-        private Predicate<Item> filter;
-        private boolean bypassFilterWhenSavingAndLoading;
+   public static class Builder extends SettingBuilder<Builder, GroupedList<Item, Groups<Item>.Group>, ItemListSetting> {
+        private Predicate<Item> filter = null;
+        private boolean bypass = false;
 
         public Builder() {
-            super(new ArrayList<>(0));
+            super(new GroupedList<>());
+        }
+
+        public Builder defaultValue(Collection<Item> defaults) {
+            if (defaultValue == null)
+                return defaultValue(defaults != null ? new GroupedList<>(defaults) : new GroupedList<>());
+            defaultValue.addAll(defaults);
+            return this;
         }
 
         public Builder defaultValue(Item... defaults) {
-            return defaultValue(defaults != null ? Arrays.asList(defaults) : new ArrayList<>());
+            if (defaultValue == null)
+                return defaultValue(defaults != null ? new GroupedList<>(Arrays.asList(defaults)) : new GroupedList<>());
+            defaultValue.addAll(Arrays.asList(defaults));
+            return this;
+        }
+
+         @SafeVarargs
+         public final Builder defaultGroups(Groups<Item>.Group... defaults) {
+            List<Groups<Item>.Group> groups = null;
+
+            if (defaults != null)
+                groups = Arrays.stream(defaults).filter(g -> g.trackerIs(GROUPS)).toList();
+
+            if (defaultValue == null)
+                return defaultValue(groups != null ? new GroupedList<>(null, groups) : new GroupedList<>());
+
+            if (groups != null) defaultValue.addAllGroups(groups);
+            return this;
         }
 
         public Builder filter(Predicate<Item> filter) {
@@ -102,14 +101,65 @@ public class ItemListSetting extends Setting<List<Item>> {
             return this;
         }
 
-        public Builder bypassFilterWhenSavingAndLoading() {
-            this.bypassFilterWhenSavingAndLoading = true;
-            return this;
-        }
-
         @Override
         public ItemListSetting build() {
-            return new ItemListSetting(name, description, defaultValue, onChanged, onModuleActivated, visible, filter, bypassFilterWhenSavingAndLoading);
+            return new ItemListSetting(name, description, defaultValue, onChanged, onModuleActivated, visible, filter, bypass);
         }
+    }
+
+    // these are just for UI testing, they are not necessarily good ones to have
+    public static Groups<Item>.Group FOOD, AXES, PICKAXES, SWORDS, HOES, TOOLS, TOOLS_STRICT, HELMETS, CHESTPLATES, LEGGINGS, BOOTS, ARMOR;
+    static {
+
+        FOOD = GROUPS.builtin("food-all", Items.APPLE)
+            .items(Registries.ITEM.stream().filter(i -> i.getComponents().get(DataComponentTypes.FOOD) != null).toList())
+            .get();
+
+        TOOLS_STRICT = GROUPS.builtin("tools-all", Items.GOLDEN_AXE)
+            .items(Registries.ITEM.stream().filter(i -> i.getComponents().get(DataComponentTypes.TOOL) != null).toList())
+            .get();
+
+        PICKAXES = GROUPS.builtin("picks", Items.IRON_PICKAXE)
+            .items(Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.GOLDEN_HOE, Items.DIAMOND_HOE, Items.NETHERITE_HOE)
+            .get();
+
+        AXES = GROUPS.builtin("axes", Items.IRON_AXE)
+            .items(Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.GOLDEN_HOE, Items.DIAMOND_HOE, Items.NETHERITE_HOE)
+            .get();
+
+        SWORDS = GROUPS.builtin("swords", Items.IRON_SWORD)
+            .items(Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.GOLDEN_HOE, Items.DIAMOND_HOE, Items.NETHERITE_HOE)
+            .get();
+
+        HOES = GROUPS.builtin("hoes", Items.IRON_HOE)
+            .items(Items.WOODEN_HOE, Items.STONE_HOE, Items.IRON_HOE, Items.GOLDEN_HOE, Items.DIAMOND_HOE, Items.NETHERITE_HOE)
+            .get();
+
+        TOOLS = GROUPS.builtin("tools", Items.DIAMOND_AXE)
+            .items(Items.SHEARS, Items.FLINT_AND_STEEL)
+            .include(PICKAXES, AXES, HOES)
+            .get();
+
+        HELMETS = GROUPS.builtin("hoes", Items.IRON_HELMET)
+            .items(Items.TURTLE_HELMET, Items.CHAINMAIL_HELMET, Items.IRON_HELMET, Items.GOLDEN_HELMET, Items.DIAMOND_HELMET, Items.NETHERITE_HELMET)
+            .get();
+
+        CHESTPLATES = GROUPS.builtin("chestplates", Items.IRON_CHESTPLATE)
+            .items(Items.CHAINMAIL_CHESTPLATE, Items.IRON_CHESTPLATE, Items.GOLDEN_CHESTPLATE, Items.DIAMOND_CHESTPLATE, Items.NETHERITE_CHESTPLATE)
+            .get();
+
+        LEGGINGS = GROUPS.builtin("leggings", Items.IRON_LEGGINGS)
+            .items(Items.CHAINMAIL_LEGGINGS, Items.IRON_LEGGINGS, Items.GOLDEN_LEGGINGS, Items.DIAMOND_LEGGINGS, Items.NETHERITE_LEGGINGS)
+            .get();
+
+        BOOTS = GROUPS.builtin("boots", Items.IRON_BOOTS)
+            .items(Items.CHAINMAIL_BOOTS, Items.IRON_BOOTS, Items.GOLDEN_BOOTS, Items.DIAMOND_BOOTS, Items.NETHERITE_BOOTS)
+            .get();
+
+        ARMOR = GROUPS.builtin("armor", Items.DIAMOND_CHESTPLATE)
+            .include(HELMETS, CHESTPLATES, LEGGINGS, BOOTS)
+            .get();
+
+
     }
 }
