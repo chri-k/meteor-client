@@ -6,9 +6,9 @@
 package meteordevelopment.meteorclient.gui.screens.settings;
 
 import meteordevelopment.meteorclient.gui.GuiTheme;
-import meteordevelopment.meteorclient.gui.screens.settings.base.GroupedListSettingScreen;
+import meteordevelopment.meteorclient.gui.screens.settings.base.GroupedSetSettingScreen;
 import meteordevelopment.meteorclient.gui.widgets.WWidget;
-import meteordevelopment.meteorclient.settings.ItemListSetting;
+import meteordevelopment.meteorclient.settings.ItemSetSetting;
 import meteordevelopment.meteorclient.utils.misc.Names;
 import net.minecraft.item.Item;
 import net.minecraft.item.Items;
@@ -16,9 +16,9 @@ import net.minecraft.registry.Registries;
 
 import java.util.function.Predicate;
 
-public class ItemListSettingScreen extends GroupedListSettingScreen<Item, ItemListSetting> {
-    public ItemListSettingScreen(GuiTheme theme, ItemListSetting setting) {
-        super(theme, "Select Items", setting, ItemListSetting.GROUPS, Registries.ITEM);
+public class ItemSetSettingScreen extends GroupedSetSettingScreen<Item, ItemSetSetting> {
+    public ItemSetSettingScreen(GuiTheme theme, ItemSetSetting setting) {
+        super(theme, "Select Items", setting, ItemSetSetting.GROUPS, Registries.ITEM);
     }
 
     @Override

@@ -6,11 +6,13 @@
 package meteordevelopment.meteorclient.settings.groups;
 
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
-import meteordevelopment.meteorclient.MeteorClient;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Unmodifiable;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Predicate;
 
 public abstract class SetGroup<T, G extends SetGroup<T, G>> {
@@ -67,12 +69,10 @@ public abstract class SetGroup<T, G extends SetGroup<T, G>> {
 
     public boolean add(T t) {
         if (!immediate.contains(t)) {
-            MeteorClient.LOG.info("SetGroup.add@ had {}", immediate.size());
             immediate.add(t);
             enumeration.invalidate();
             return true;
         }
-        MeteorClient.LOG.info("SetGroup.add@ duplicate item");
         return false;
     }
 
@@ -104,12 +104,10 @@ public abstract class SetGroup<T, G extends SetGroup<T, G>> {
     public boolean addAll(@NotNull Collection<? extends T> collection) {
         boolean modified = false;
         for (T t : collection) {
-            MeteorClient.LOG.info("SetGroup.addAll@ had {}", immediate.size());
             if (!immediate.contains(t)) {
                 immediate.add(t);
                 modified = true;
             }
-            MeteorClient.LOG.info("SetGroup.addAll@ has {}", immediate.size());
         }
         if (modified) enumeration.invalidate();
         return modified;

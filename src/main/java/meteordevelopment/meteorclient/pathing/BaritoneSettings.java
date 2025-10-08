@@ -180,6 +180,9 @@ public class BaritoneSettings implements IPathManager.ISettings {
                         .build()
                     );
                 }
+
+                // TODO: resolve
+
 //                else if (value instanceof List) {
 //                    Type listType = ((ParameterizedType) field.getGenericType()).getActualTypeArguments()[0];
 //                    Type type = ((ParameterizedType) listType).getActualTypeArguments()[0];
@@ -195,7 +198,7 @@ public class BaritoneSettings implements IPathManager.ISettings {
 //                        );
 //                    }
 //                    else if (type == Item.class) {
-//                        sgItemLists.add(new ItemListSetting.Builder()
+//                        sgItemLists.add(new ItemSetSetting.Builder()
 //                            .name(setting.getName())
 //                            .description(getDescription(setting.getName()))
 //                            .defaultValue((List<Item>) setting.defaultValue)
