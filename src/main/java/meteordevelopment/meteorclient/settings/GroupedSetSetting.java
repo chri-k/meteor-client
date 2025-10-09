@@ -129,7 +129,7 @@ public abstract class GroupedSetSetting<T> extends AbstractCollectionSetting<Gro
         tag.put("direct", direct);
 
         NbtList include = new NbtList();
-        value.getGroups().stream().map((g) -> NbtString.of(g.internalName)).forEach(direct::add);
+        value.getGroups().stream().map((g) -> NbtString.of(g.internalName)).forEach(include::add);
 
         tag.put("include", include);
 
