@@ -43,11 +43,11 @@ public abstract class AbstractCollectionSetting<T> extends Setting<T> {
         Iterable<Identifier> identifiers = getIdentifierSuggestions();
 
         builder = builder.createOffset(builder.getStart() + given.length() - last.length());
-        SuggestionsBuilder builderDuplicatedDueToArbitraryLambdaCaptureRestrictions = builder;
+        SuggestionsBuilder alsoBuilder = builder;
 
         if (identifiers != null) {
-            CommandSource.forEachMatching(identifiers, last, id -> id, id -> builderDuplicatedDueToArbitraryLambdaCaptureRestrictions.suggest(id.toString()));
-            return builderDuplicatedDueToArbitraryLambdaCaptureRestrictions.buildFuture();
+            CommandSource.forEachMatching(identifiers, last, id -> id, id -> alsoBuilder.suggest(id.toString()));
+            return alsoBuilder.buildFuture();
         }
 
         Iterable<String> suggestions = getSuggestions();
@@ -55,11 +55,11 @@ public abstract class AbstractCollectionSetting<T> extends Setting<T> {
         if (suggestions != null) {
             for(String s : suggestions) {
                 if (CommandSource.shouldSuggest(last, s.toLowerCase(Locale.ROOT))) {
-                    builderDuplicatedDueToArbitraryLambdaCaptureRestrictions.suggest(s);
+                    alsoBuilder.suggest(s);
                 }
             }
         }
 
-        return builderDuplicatedDueToArbitraryLambdaCaptureRestrictions.buildFuture();
+        return alsoBuilder.buildFuture();
     }
 }

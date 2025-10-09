@@ -37,7 +37,6 @@ public class SettingValueArgumentType implements ArgumentType<String> {
 
     @Override
     public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
-
         Setting<?> setting;
 
         try {
