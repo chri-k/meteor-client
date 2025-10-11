@@ -67,14 +67,14 @@ public class Breadcrumbs extends Module {
 
     @Override
     public void onDeactivate() {
-        for (Section section : sections) sectionPool.free(section);
+        sectionPool.freeAll(sections);
         sections.clear();
     }
 
     @EventHandler
     private void onTick(TickEvent.Post event) {
         if (lastDimension != mc.world.getDimension()) {
-            for (Section sec : sections) sectionPool.free(sec);
+            sectionPool.freeAll(sections);
             sections.clear();
         }
 

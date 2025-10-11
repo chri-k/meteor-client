@@ -22,6 +22,7 @@ import net.minecraft.client.texture.NativeImage;
 import net.minecraft.client.texture.NativeImageBackedTexture;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.nbt.NbtElement;
+import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
@@ -30,13 +31,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 public class Waypoints extends System<Waypoints> implements Iterable<Waypoint> {
+    private static final String PNG = ".png";
+
     public static final String[] BUILTIN_ICONS = {"square", "circle", "triangle", "star", "diamond", "skull"};
 
     public final Map<String, AbstractTexture> icons = new ConcurrentHashMap<>();
 
-    private final List<Waypoint> waypoints = Collections.synchronizedList(new ArrayList<>());
+    private final List<Waypoint> waypoints = new CopyOnWriteArrayList<>();
 
     public Waypoints() {
         super(null);
@@ -52,7 +56,7 @@ public class Waypoints extends System<Waypoints> implements Iterable<Waypoint> {
         iconsFolder.mkdirs();
 
         for (String builtinIcon : BUILTIN_ICONS) {
-            File iconFile = new File(iconsFolder, builtinIcon + ".png");
+            File iconFile = new File(iconsFolder, builtinIcon + PNG);
             if (!iconFile.exists()) copyIcon(iconFile);
         }
 
@@ -60,10 +64,10 @@ public class Waypoints extends System<Waypoints> implements Iterable<Waypoint> {
         if (files == null) return;
 
         for (File file : files) {
-            if (file.getName().endsWith(".png")) {
-                try {
-                    String name = file.getName().replace(".png", "");
-                    AbstractTexture texture = new NativeImageBackedTexture(NativeImage.read(new FileInputStream(file)));
+            if (file.getName().endsWith(PNG)) {
+                try (FileInputStream inputStream = new FileInputStream(file)) {
+                    String name = StringUtils.removeEnd(file.getName(), PNG);
+                    AbstractTexture texture = new NativeImageBackedTexture(NativeImage.read(inputStream));
                     icons.put(name, texture);
                 }
                 catch (IOException e) {

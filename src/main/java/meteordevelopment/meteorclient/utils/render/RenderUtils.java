@@ -5,6 +5,7 @@
 
 package meteordevelopment.meteorclient.utils.render;
 
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import meteordevelopment.meteorclient.MeteorClient;
 import meteordevelopment.meteorclient.events.render.Render3DEvent;
 import meteordevelopment.meteorclient.events.world.TickEvent;
@@ -21,8 +22,6 @@ import net.minecraft.util.math.Vec3d;
 import org.joml.Matrix4f;
 import org.joml.Vector4f;
 
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 import static meteordevelopment.meteorclient.MeteorClient.mc;
@@ -31,7 +30,7 @@ public class RenderUtils {
     public static Vec3d center;
 
     private static final Pool<RenderBlock> renderBlockPool = new Pool<>(RenderBlock::new);
-    private static final List<RenderBlock> renderBlocks = new ArrayList<>();
+    private static final List<RenderBlock> renderBlocks = new ObjectArrayList<>();
 
     private RenderUtils() {
     }
@@ -74,14 +73,14 @@ public class RenderUtils {
 
     public static void renderTickingBlock(BlockPos blockPos, Color sideColor, Color lineColor, ShapeMode shapeMode, int excludeDir, int duration, boolean fade, boolean shrink) {
         // Ensure there aren't multiple fading blocks in one pos
-        Iterator<RenderBlock> iterator = renderBlocks.iterator();
-        while (iterator.hasNext()) {
-            RenderBlock next = iterator.next();
+        renderBlocks.removeIf(next -> {
             if (next.pos.equals(blockPos)) {
-                iterator.remove();
                 renderBlockPool.free(next);
+                return true;
+            } else {
+                return false;
             }
-        }
+        });
 
         renderBlocks.add(renderBlockPool.get().set(blockPos, sideColor, lineColor, shapeMode, excludeDir, duration, fade, shrink));
     }
@@ -90,16 +89,16 @@ public class RenderUtils {
     private static void onTick(TickEvent.Pre event) {
         if (renderBlocks.isEmpty()) return;
 
-        renderBlocks.forEach(RenderBlock::tick);
+        renderBlocks.removeIf(next -> {
+            next.tick();
 
-        Iterator<RenderBlock> iterator = renderBlocks.iterator();
-        while (iterator.hasNext()) {
-            RenderBlock next = iterator.next();
             if (next.ticks <= 0) {
-                iterator.remove();
                 renderBlockPool.free(next);
+                return true;
+            } else {
+                return false;
             }
-        }
+        });
     }
 
     @EventHandler
