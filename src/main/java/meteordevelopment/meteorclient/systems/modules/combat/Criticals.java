@@ -15,6 +15,7 @@ import meteordevelopment.meteorclient.settings.*;
 import meteordevelopment.meteorclient.systems.modules.Categories;
 import meteordevelopment.meteorclient.systems.modules.Module;
 import meteordevelopment.meteorclient.systems.modules.Modules;
+import meteordevelopment.meteorclient.utils.entity.EntityUtils;
 import meteordevelopment.orbit.EventHandler;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.LivingEntity;
@@ -133,14 +134,17 @@ public class Criticals extends Module {
     private void onTick(TickEvent.Pre event) {
         if (sendPackets) {
             if (sendTimer <= 0) {
-                sendPackets = false;
-
-                if (attackPacket == null || swingPacket == null) return;
+                if (attackPacket == null || swingPacket == null) {
+                    sendPackets = false;
+                    return;
+                }
                 mc.getNetworkHandler().sendPacket(attackPacket);
                 mc.getNetworkHandler().sendPacket(swingPacket);
 
                 attackPacket = null;
                 swingPacket = null;
+
+                sendPackets = false;
             } else {
                 sendTimer--;
             }
@@ -159,6 +163,9 @@ public class Criticals extends Module {
     }
 
     private boolean skipCrit() {
+        if (EntityUtils.isInCobweb(mc.player) && (mode.get() == Mode.Jump || mode.get() == Mode.MiniJump))
+            return true;
+
         return !mc.player.isOnGround() || mc.player.isSubmergedInWater() || mc.player.isInLava() || mc.player.isClimbing();
     }
 
