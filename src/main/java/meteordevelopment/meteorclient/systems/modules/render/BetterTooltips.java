@@ -365,23 +365,6 @@ public class BetterTooltips extends Module {
                 event.tooltipData = createBannerFromShield(event.itemStack);
             }
         }
-
-        // Fish peek
-        else if (event.itemStack.getItem() instanceof EntityBucketItem bucketItem && previewEntities()) {
-            EntityType<?> type = ((EntityBucketItemAccessor) bucketItem).getEntityType();
-            Entity entity = type.create(mc.world, SpawnReason.NATURAL);
-            if (entity != null) {
-                NbtComponent nbtComponent = event.itemStack.getOrDefault(DataComponentTypes.BUCKET_ENTITY_DATA, NbtComponent.DEFAULT);
-                if (nbtComponent.isEmpty()) {
-                    return;
-                }
-
-                entity.copyComponentsFrom(event.itemStack);
-                ((Bucketable) entity).copyDataFromNbt(nbtComponent.copyNbt());
-                ((EntityAccessor) entity).setInWater(true);
-                event.tooltipData = new EntityTooltipComponent(entity);
-            }
-        }
     }
 
     public void applyCompactShulkerTooltip(ItemStack shulkerItem, List<Text> tooltip) {
