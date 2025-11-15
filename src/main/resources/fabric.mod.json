@@ -37,6 +37,7 @@
   "accessWidener": "meteor-client.accesswidener",
   "custom": {
     "meteor-client:build_number": "${build_number}",
+    "meteor-client:lts-of": "${upstream_latest_version}",
     "meteor-client:color": "145,61,226",
     "meteor-client:commit": "${commit}",
     "modmenu": {

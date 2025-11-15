@@ -5,16 +5,10 @@ plugins {
 }
 
 base {
-    archivesName = properties["archives_base_name"] as String
+    archivesName = properties["archives_base_name"] as String + "-" + properties["upstream_latest_version"] + "-sww-lts"
     group = properties["maven_group"] as String
 
-    val suffix = if (project.hasProperty("build_number")) {
-        project.findProperty("build_number")
-    } else {
-        "local"
-    }
-
-    version = properties["minecraft_version"] as String + "-" + suffix
+    version = properties["minecraft_version"] as String
 }
 
 repositories {
@@ -123,7 +117,8 @@ tasks {
             "build_number" to buildNumber,
             "commit" to commit,
             "minecraft_version" to project.property("minecraft_version"),
-            "loader_version" to project.property("loader_version")
+            "loader_version" to project.property("loader_version"),
+            "upstream_latest_version" to project.property("upstream_latest_version")
         )
 
         inputs.properties(propertyMap)
@@ -170,6 +165,8 @@ tasks {
                 it.moduleGroup == "org.slf4j"
             }
         }
+
+        relocate("org.meteordev", "meteordevelopment");
     }
 
     remapJar {
@@ -193,6 +190,7 @@ tasks {
 }
 
 publishing {
+    /*
     publications {
         create<MavenPublication>("mavenJava") {
             from(components["java"])
@@ -216,4 +214,5 @@ publishing {
             }
         }
     }
+    */
 }

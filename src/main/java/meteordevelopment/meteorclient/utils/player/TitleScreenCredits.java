@@ -92,6 +92,13 @@ public class TitleScreenCredits {
             credit.text.append(Text.literal(addon.authors[i]).formatted(Formatting.WHITE));
         }
 
+        if (addon == MeteorClient.ADDON) {
+            credit.text.append(Text.literal("; LTS from ").formatted(Formatting.GRAY));
+            credit.text.append(Text.literal(MeteorClient.LTS_VERSION_STRING).formatted(Formatting.WHITE));
+            credit.text.append(Text.literal(" by ").formatted(Formatting.GRAY));
+            credit.text.append(Text.literal("sww_").formatted(Formatting.RED));
+        }
+
         credits.add(credit);
     }
 
