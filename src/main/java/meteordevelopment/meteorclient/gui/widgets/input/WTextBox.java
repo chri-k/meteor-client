@@ -105,8 +105,8 @@ public abstract class WTextBox extends WWidget {
     }
 
     @Override
-    public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean used) {
-        if (mouseOver && !used) {
+    public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean doubled) {
+        if (mouseOver && !doubled) {
             if (button == GLFW_MOUSE_BUTTON_RIGHT) {
                 if (!text.isEmpty()) {
                     text = "";

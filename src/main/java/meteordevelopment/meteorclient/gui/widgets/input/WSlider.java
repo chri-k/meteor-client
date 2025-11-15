@@ -42,8 +42,8 @@ public abstract class WSlider extends WWidget {
     }
 
     @Override
-    public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean used) {
-        if (mouseOver && !used) {
+    public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean doubled) {
+        if (mouseOver && !doubled) {
             valueAtDragStart = value;
             double handleSize = handleSize();
 

@@ -74,8 +74,8 @@ public abstract class WView extends WVerticalList {
     }
 
     @Override
-    public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean used) {
-        if (handleMouseOver && button == GLFW_MOUSE_BUTTON_LEFT && !used) {
+    public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean doubled) {
+        if (handleMouseOver && button == GLFW_MOUSE_BUTTON_LEFT && !doubled) {
             handlePressed = true;
             return true;
         }

@@ -21,6 +21,7 @@ public abstract class WWidget implements BaseWidget {
     public String tooltip;
 
     public boolean mouseOver;
+    protected boolean instantTooltips;
     protected double mouseOverTimer;
 
     public void init() {}
@@ -73,7 +74,7 @@ public abstract class WWidget implements BaseWidget {
 
         if (isOver(mouseX, mouseY)) {
             mouseOverTimer += delta;
-            if (mouseOverTimer >= 1 && tooltip != null) renderer.tooltip(tooltip);
+            if ((instantTooltips || mouseOverTimer >= 1) && tooltip != null) renderer.tooltip(tooltip);
         }
         else {
             mouseOverTimer = 0;
@@ -87,10 +88,10 @@ public abstract class WWidget implements BaseWidget {
 
     // Events
 
-    public boolean mouseClicked(double mouseX, double mouseY, int button, boolean used) {
-        return onMouseClicked(mouseX, mouseY, button, used);
+    public boolean mouseClicked(double mouseX, double mouseY, int button, boolean doubled) {
+        return onMouseClicked(mouseX, mouseY, button, doubled);
     }
-    public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean used) { return false; }
+    public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean doubled) { return false; }
 
     public boolean mouseReleased(double mouseX, double mouseY, int button) {
         return onMouseReleased(mouseX, mouseY, button);

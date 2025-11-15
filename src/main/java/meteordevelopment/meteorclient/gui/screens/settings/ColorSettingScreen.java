@@ -276,8 +276,8 @@ public class ColorSettingScreen extends WindowScreen {
         }
 
         @Override
-        public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean used) {
-            if (used) return false;
+        public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean doubled) {
+            if (doubled) return false;
 
             if (mouseOver) {
                 dragging = true;
@@ -548,8 +548,8 @@ public class ColorSettingScreen extends WindowScreen {
         }
 
         @Override
-        public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean used) {
-            if (used) return false;
+        public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean doubled) {
+            if (doubled) return false;
 
             if (mouseOver) {
                 dragging = true;

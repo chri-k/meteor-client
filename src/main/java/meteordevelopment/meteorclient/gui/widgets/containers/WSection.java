@@ -123,8 +123,8 @@ public abstract class WSection extends WVerticalList {
         }
 
         @Override
-        public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean used) {
-            if (mouseOver && button == GLFW_MOUSE_BUTTON_LEFT && !used) {
+        public boolean onMouseClicked(double mouseX, double mouseY, int button, boolean doubled) {
+            if (mouseOver && button == GLFW_MOUSE_BUTTON_LEFT && !doubled) {
                 onClick();
                 return true;
             }
