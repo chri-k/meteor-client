@@ -75,6 +75,7 @@
     "CrossbowItemAccessor",
     "DefaultSkinHelperMixin",
     "DisconnectedScreenMixin",
+    "DownloaderMixin",
     "DrawContextMixin",
     "DyedColorComponentMixin",
     "ElytraFeatureRendererMixin",
