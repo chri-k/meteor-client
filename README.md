@@ -15,7 +15,7 @@ This fork also includes some unmerged PRs of meteor, adding some features not pr
 
 Not all changes are ported, and some add-ons might break as a result of changes.
 
-If reporting any issues on discord and using version, direct the report specifically to @31a05b9c, as this is not an official version.
+If reporting any issues on discord while using this, direct the report specifically to @31a05b9c, as this is not an official version.
 
 ## Usage
 
