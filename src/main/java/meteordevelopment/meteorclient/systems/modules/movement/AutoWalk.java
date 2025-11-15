@@ -99,7 +99,7 @@ public class AutoWalk extends Module {
     @EventHandler(priority = EventPriority.HIGH)
     private void onTick(TickEvent.Pre event) {
         if (mode.get() == Mode.Simple) {
-            if (disableOnY.get() && mc.player.lastY != mc.player.getY()) {
+            if (disableOnY.get() && mc.player.prevY != mc.player.getY()) {
                 toggle();
                 return;
             }
