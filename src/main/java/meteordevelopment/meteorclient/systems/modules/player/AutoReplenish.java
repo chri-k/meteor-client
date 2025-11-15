@@ -131,7 +131,7 @@ public class AutoReplenish extends Module {
         items[slot] = stack.copy();
 
         if (slot == 9) slot = SlotUtils.OFFHAND;
-        
+
         if (excludedItems.get().contains(stack.getItem())) return;
         if (excludedItems.get().contains(prevStack.getItem())) return;
 
@@ -155,8 +155,8 @@ public class AutoReplenish extends Module {
         }
 
         // eliminate occasional loops when moving items from hotbar to itself
-        if (fromSlot == mc.player.getInventory().getSelectedSlot() || fromSlot == SlotUtils.OFFHAND) return;
-        if (fromSlot < 9 && fromSlot < slot && slot != mc.player.getInventory().getSelectedSlot() && slot != SlotUtils.OFFHAND) return;
+        if (fromSlot == mc.player.getInventory().selectedSlot || fromSlot == SlotUtils.OFFHAND) return;
+        if (fromSlot < 9 && fromSlot < slot && slot != mc.player.getInventory().selectedSlot && slot != SlotUtils.OFFHAND) return;
 
         InvUtils.move().from(fromSlot).to(slot);
     }
