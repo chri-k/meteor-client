@@ -115,17 +115,35 @@ public class NoFall extends Module {
     private void onSendPacket(PacketEvent.Send event) {
         if (pauseOnMace.get() && mc.player.getMainHandStack().getItem() instanceof MaceItem) return;
         if (mc.player.getAbilities().creativeMode
-            || !(event.packet instanceof PlayerMoveC2SPacket)
+            || !(event.packet instanceof PlayerMoveC2SPacket packet)
             || mode.get() != Mode.Packet
             || ((IPlayerMoveC2SPacket) event.packet).meteor$getTag() == 1337) return;
 
+        double playerY = mc.player.prevY;
+        double playerX = mc.player.prevX;
+        double playerZ = mc.player.prevZ;
 
-        if (!Modules.get().isActive(Flight.class)) {
-            if (mc.player.isGliding()) return;
-            if (mc.player.getVelocity().y > -0.5) return;
-            ((PlayerMoveC2SPacketAccessor) event.packet).setOnGround(true);
-        } else {
-            ((PlayerMoveC2SPacketAccessor) event.packet).setOnGround(true);
+        double packetY = packet.getY(mc.player.getY());
+        double packetX = packet.getX(mc.player.getX());
+        double packetZ = packet.getZ(mc.player.getZ());
+
+        if (mc.player.isGliding()) return;
+
+        ((PlayerMoveC2SPacketAccessor) event.packet).setOnGround(true);
+
+        double slopeX = (packetX - playerX) / (packetY - playerY);
+        double slopeZ = (packetZ - playerZ) / (packetY - playerY);
+
+        // nonrecursively split giant movement packets. will break cursed trajectories or phasing through blocks.
+        if (packetY - playerY < -4) {
+            PlayerMoveC2SPacket split = new PlayerMoveC2SPacket.PositionAndOnGround(playerX + slopeX * 4, playerY - 4, playerZ + slopeZ * 4, true, false);
+            ((IPlayerMoveC2SPacket) split).meteor$setTag(1337);
+            for (int i = -4; i > packetY - playerY; i -= 4) {
+                ((PlayerMoveC2SPacketAccessor) split).setY(playerY + i);
+                ((PlayerMoveC2SPacketAccessor) split).setX(playerX + slopeX * i);
+                ((PlayerMoveC2SPacketAccessor) split).setZ(playerZ + slopeZ * i);
+                mc.getNetworkHandler().sendPacket(split);
+            }
         }
     }
 
