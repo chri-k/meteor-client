@@ -9,6 +9,20 @@ base {
     group = properties["maven_group"] as String
 
     version = properties["minecraft_version"] as String
+
+    val process = ProcessBuilder(listOf("git", "rev-parse", "--abbrev-ref", "HEAD"))
+    .directory(project.rootDir)
+    .redirectErrorStream(true)
+    .start()
+
+    if (process.inputStream.bufferedReader().readText().trim() == "1.21.4-lts") {
+        val process = ProcessBuilder(listOf("git", "rev-parse", "--verify", "HEAD"))
+            .directory(project.rootDir)
+            .redirectErrorStream(true)
+            .start()
+
+        project.setProperty("commit", process.inputStream.bufferedReader().readText().trim())
+    }
 }
 
 repositories {
